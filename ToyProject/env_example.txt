@@ -1,0 +1,19 @@
+# .env 파일 예시
+# 이 파일을 .env로 복사한 후 API 키를 입력하세요.
+# cp env_example.txt .env
+
+# LLM API Keys
+# 사용할 프로바이더의 API 키만 설정하면 됩니다.
+
+# OpenAI (GPT)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Anthropic (Claude)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Google (Gemini)
+GOOGLE_API_KEY=your_google_api_key_here
+
+# 로컬 모델 설정 (Qwen 등)
+# LOCAL_MODEL_PATH=/path/to/local/model
+
