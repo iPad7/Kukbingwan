@@ -1,0 +1,127 @@
+services:
+  airflow-init:
+    image: apache/airflow:2.9.1
+    user: "0:0"
+    depends_on:
+      - airflow-meta-db
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:-F9fpIB2m+mD4s/MRMtsycmePvJXv5z67vUkFP5D5s9A=}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-meta-db:5432/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: ""
+    entrypoint: /bin/bash
+    command: -c "airflow db init"
+    volumes:
+      - airflow_home:/opt/airflow
+    restart: "no"
+
+  airflow-webserver:
+    image: apache/airflow:2.9.1
+    command: webserver
+    user: "0:0"
+    depends_on:
+      - airflow-init
+      - airflow-scheduler
+      - airflow-meta-db
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:-F9fpIB2m+mD4s/MRMtsycmePvJXv5z67vUkFP5D5s9A=}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-meta-db:5432/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: ""
+    ports:
+      - "8080:8080"
+    volumes:
+      - airflow_home:/opt/airflow
+    restart: unless-stopped
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.1
+    command: scheduler
+    user: "0:0"
+    depends_on:
+      - airflow-init
+      - airflow-meta-db
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:-F9fpIB2m+mD4s/MRMtsycmePvJXv5z67vUkFP5D5s9A=}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-meta-db:5432/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: ""
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - airflow_home:/opt/airflow
+    restart: unless-stopped
+
+  airflow-meta-db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_meta_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  postgres-sot:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: ${SOT_DB_USER:-sot}
+      POSTGRES_PASSWORD: ${SOT_DB_PASSWORD:-sot}
+      POSTGRES_DB: ${SOT_DB_NAME:-sot}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_sot_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+      - ./seed/seed.sql:/docker-entrypoint-initdb.d/01_seed.sql
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.8.2
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  agent-batch:
+    build:
+      context: ./agent_batch
+      dockerfile: Dockerfile
+    command: ["sleep", "infinity"]
+    environment:
+      DATABASE_URL: postgresql://${SOT_DB_USER:-sot}:${SOT_DB_PASSWORD:-sot}@postgres-sot:5432/${SOT_DB_NAME:-sot}
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: reviews_v1
+      ARTIFACT_DIR: /artifacts
+    volumes:
+      - ./agent_batch:/app
+      - ./artifacts:/artifacts
+    depends_on:
+      - postgres-sot
+      - qdrant
+    restart: unless-stopped
+
+  web-viewer:
+    build:
+      context: ./web_viewer
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${SOT_DB_USER:-sot}:${SOT_DB_PASSWORD:-sot}@postgres-sot:5432/${SOT_DB_NAME:-sot}
+      ARTIFACT_DIR: /artifacts
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./web_viewer:/app
+      - ./artifacts:/artifacts
+    depends_on:
+      - postgres-sot
+    restart: unless-stopped
+
+volumes:
+  airflow_home:
+  airflow_meta_db_data:
+  postgres_sot_data:
+  qdrant_data:
