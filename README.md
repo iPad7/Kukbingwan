@@ -1,6 +1,6 @@
-# Kukbingwan Dummy App (MVP Skeleton)
+# AI Innovation Challenge 2026 (Team Kukbingwan)
 
-더미 스켈레톤으로 Airflow + agent-batch + Postgres (SoT) + Qdrant + FastAPI Web Viewer를 한 번에 띄우는 구성을 담고 있습니다. 실제 기능 대신 기본 스키마/샘플 데이터/헬스엔드포인트만 제공합니다.
+스켈레톤으로 Airflow + agent-batch + Postgres (SoT) + Qdrant + FastAPI Web Viewer를 한 번에 띄우는 구성을 담고 있습니다. 실제 기능 대신 기본 스키마/샘플 데이터/헬스엔드포인트만 제공합니다.
 
 ## 아키텍처 다이어그램
 - 논리 아키텍처  
@@ -23,6 +23,7 @@
 ├─ agent_batch/                 # 배치 CLI 스텁 (Dockerfile, app/)
 ├─ web_viewer/                  # FastAPI 웹 뷰어 (Dockerfile, app/)
 ├─ airflow/                     # Airflow DAG 스텁
+├─ ToyProject/                  # @cosme 크롤링 + LLM 분석 파이프라인 프로토타입
 └─ docs/                        # 추가 문서 (INSTALL 등)
 ```
 
@@ -34,6 +35,31 @@
 - `web_viewer/`: FastAPI read-only 뷰어(`/health`, `/platforms`, `/categories`, `/rankings`, `/reports`, `/downloads/rankings.xlsx`) + Dockerfile/requirements.
 - `airflow/dags/`: 4개 DAG 스텁(BashOperator에서 추후 `docker exec agent-batch ...`로 교체 예정).
 - `artifacts/`: xlsx 등 산출물 저장 위치(웹뷰어/에이전트와 공유).
+
+
+## ToyProject: @cosme 라네즈 분석 파이프라인
+
+@cosme 사이트에서 라네즈(Laneige) 제품 정보를 크롤링하고, LLM을 활용하여 시장 인사이트를 도출하는 프로토타입 파이프라인입니다.
+
+### 주요 기능
+- **크롤링**: 제품명, 가격, 별점, 리뷰 수, 리뷰 내용 수집
+- **시계열 저장**: Parquet 형식으로 데이터 누적 (랭킹/판매량 변화 추적)
+- **LLM 분석**: 다양한 모델 지원 (Qwen, GPT, Claude, Gemini)
+- **리포트 생성**: 분석 결과를 txt 파일로 저장
+
+### 실행 방법
+```bash
+cd ToyProject
+pip install -r requirements.txt
+python main.py --gpu 0  # GPU 0번 사용
+```
+
+### 결과 예시
+- 실행 로그  
+  ![ToyProject Log](docs/img/toy_log.png)
+- 분석 결과  
+  ![ToyProject Output](docs/img/toy_output.png)
+
 
 ## 다음 단계 제안
 - Airflow에서 실제 `DockerOperator` 혹은 KubernetesOperator 등으로 agent-batch 호출하도록 교체.

@@ -13,10 +13,15 @@ from datetime import datetime
 from typing import Optional
 from dataclasses import dataclass, field, asdict
 
+import warnings
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 from loguru import logger
 from tqdm import tqdm
+
+# BeautifulSoup 경고 무시
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+warnings.filterwarnings("ignore", category=FutureWarning, module="soupsieve")
 
 import sys
 sys.path.append(str(__file__).rsplit("/", 2)[0])
@@ -328,7 +333,7 @@ class CosmeCrawler:
             
             # 가격 추출
             price = None
-            price_selectors = [".price", "[class*='price']", "span:contains('円')"]
+            price_selectors = [".price", "[class*='price']"]
             for selector in price_selectors:
                 try:
                     price_elem = card.select_one(selector)

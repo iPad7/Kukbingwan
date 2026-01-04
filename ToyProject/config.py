@@ -34,8 +34,8 @@ class CrawlerConfig(BaseModel):
     base_url: str = "https://cosmeet.cosme.net"  # 검색용
     detail_base_url: str = "https://www.cosme.net"  # 제품 상세/리뷰용
     brand_name: str = "laneige"
-    max_products: int = 5
-    max_reviews_per_product: int = 5
+    max_products: int = 10
+    max_reviews_per_product: int = 10
     request_delay: float = 2.0  # 요청 간 딜레이 (초)
     timeout: int = 30
     user_agent: str = (

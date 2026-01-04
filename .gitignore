@@ -1,3 +1,8 @@
 __pycache__/
 artifacts/
 .env
+
+# ToyProject
+ToyProject/data/
+ToyProject/logs/
+ToyProject/output/
